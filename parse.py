@@ -1,6 +1,7 @@
 import os, re, json, binascii
 
 def parseMeta(root):
+    print(filename)
     with open(filename,'r',encoding='utf-8',errors='ignore') as f:
         content = f.read()
         topic_id = readMetaAttr("topic_id", content)
@@ -24,8 +25,7 @@ def parseMeta(root):
         word_etyma = readMetaAttr("word_etyma", content)
         d = {"topic_id":topic_id, "word_level_id":word_level_id, "tag_id": tag_id, "word": word, "word_audio": word_audio, "image_file":image_file, "accent":accent, "mean_cn":mean_cn, "mean_en":mean_en, "sentence_phrase":sentence_phrase, "deformation_img":deformation_img, "sentence":sentence, "sentence_trans":sentence_trans, "sentence_audio":sentence_audio, "cloze_data": cloze_data, "cloze":cloze, "options":options, "tips":tips, "word_etyma":word_etyma}
         word = word.replace('"', '')
-        print(filename)
-        os.mkdir(root + 'project_output/' + word + '/')
+        os.makedirs(root + 'project_output\\' + word + '\\')
         with open(root + 'project_output/' + word + '/data.txt', 'w', encoding = 'utf-8') as f:
             f.write(content)
         with open(root + 'project_output/' + word + '/word.json', 'w', encoding = 'utf-8') as f:
@@ -46,7 +46,7 @@ def parseAAC(data):
     try:
         res = re.findall("ff f1 5c 40.*00 07", data)[0]
         with open(savePath + "audio.aac", 'wb') as bmp_file:
-            bmp_file.write(bytearray.fromhex(res)) 
+            bmp_file.write(bytearray.fromhex(res))
     except:
         print("未解析出aac")
         return "Error"
@@ -87,7 +87,7 @@ def hex2chr(data):
 def int16(num):
     return int(num, 16)
 
-def readZpk():
+def readZpk(filename):
     with open(filename, 'rb') as f:
         a=f.read()
         b2a_hex = binascii.b2a_hex(a)
@@ -109,7 +109,7 @@ def readMetaAttr(name, content):
         return ''
 
 def readMetaAttrWord(name, content):
-    res = re.findall('\"' + name + '\":(.*?)}', content)
+    res = re.findall('"' + name + '":(.*?)(?=[,}])', content)
     if len(res) > 0:
         attr = res[0]
         if attr[0] == '"' and attr[-1] == '"':
@@ -124,28 +124,32 @@ def write():
         bmp_file.write(bytearray.fromhex(data))
 
 if __name__ == "__main__":
-    for root, dirs, files in os.walk('./'):
+    for root, dirs, files in os.walk('402\\'):
         if root != './':
-            root += '/'
-            os.mkdir(root + 'project_output/')
-            for file in os.listdir(root):
-                if file != 'project_output':
-                    filename = root + file
-                    data = readZpk()
-                    word = parseMeta(root)
-                    savePath = root + 'project_output/' + word + '/'
-                    fileList = parseFileList(data)
-                    newFileList = []
-                    for i in fileList['list'].split('\n'):
-                        info =  i.split('.')
-                        name =info[0]
-                        ext = str.lower(info[1])
-                        if ext == 'jpg' or ext == 'jpeg':
-                            parseJPG(data, i)
-                        elif ext == 'png':
-                            parsePNG(data, i)
-                        else:
-                            continue
+            # root += '/'
+            # os.mkdir(root + 'project_output/')
+            for files in os.listdir(root):
+
+                files=root+files
+                for file in os.listdir(files):
+                    if file != 'project_output':
+                        filename = files+'\\'+ file
+                        data = readZpk(filename)
+                        word = parseMeta(root)
+                        savePath = root + 'project_output/' + word + '/'
+                        fileList = parseFileList(data)
+                        newFileList = []
+                        for i in fileList['list'].split('\n'):
+                            info =  i.split('.')
+                            name =info[0]
+                            if len(info)>1:
+                                ext = str.lower(info[1])
+                            if ext == 'jpg' or ext == 'jpeg':
+                                parseJPG(data, i)
+                            elif ext == 'png':
+                                parsePNG(data, i)
+                            else:
+                                continue
                 # parseAAC(data)
                 # parseMP3(data)
                 # parseJPG(data)
